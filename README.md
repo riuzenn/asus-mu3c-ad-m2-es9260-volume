@@ -73,6 +73,10 @@ scripts/find-device.sh
 
 刷写前必须阅读 [刷写与恢复流程](docs/flashing.md)。推荐入口 `scripts/flash-v3.sh` 还会强制检查 v3 ROM 的 SHA-256。
 
+## Windows 安装包
+
+Windows 10/11 x64 版使用独立 `mu3c-installer.exe`。每次安装先读取、保存并校验两份完整 EEPROM 备份，再由仓库所有者通过 GitHub Actions 对本次随机挑战签发短期 Ed25519 授权。安装命令还会保存一份最新刷前备份、核对实时 EEPROM，并在写入后完成完整读回。完整操作见 [Windows v3 installer](docs/windows.md)。Windows 实机刷写尚待独立验证；此版本保持已验证 v3 的音量范围。
+
 ## 安全设计
 
 刷写器会在擦除前执行以下硬检查：

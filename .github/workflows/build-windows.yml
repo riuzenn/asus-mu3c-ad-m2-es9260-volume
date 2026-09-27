@@ -1,0 +1,38 @@
+name: Build Windows v3 installer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'go.mod'
+      - 'docs/windows.md'
+      - '.github/workflows/build-windows.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Test and compile
+        shell: pwsh
+        run: |
+          go test ./...
+          New-Item -ItemType Directory dist | Out-Null
+          go build -trimpath -ldflags="-s -w" -o dist/mu3c-installer.exe ./cmd/mu3c-installer
+          Copy-Item docs/windows.md dist/README.md
+          Compress-Archive -Path dist/mu3c-installer.exe,dist/README.md -DestinationPath MU3C-AD-M2-v3-Windows.zip
+          Get-FileHash MU3C-AD-M2-v3-Windows.zip -Algorithm SHA256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MU3C-AD-M2-v3-Windows
+          path: MU3C-AD-M2-v3-Windows.zip
+          if-no-files-found: error

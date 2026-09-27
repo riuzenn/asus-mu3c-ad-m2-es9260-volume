@@ -4,4 +4,12 @@ __pycache__/
 *.rom
 *.bin
 *.zip
+*.exe
 AppData/
+dist/
+sessions/
+challenge.json
+session.json
+permit.json
+install-started.json
+install-complete.json

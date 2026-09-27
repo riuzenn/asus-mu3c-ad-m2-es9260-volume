@@ -1,0 +1,36 @@
+name: Issue Windows firmware installation permit
+
+on:
+  workflow_dispatch:
+    inputs:
+      challenge_json:
+        description: Full challenge.json from one Windows prepare session
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  issue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Sign exact v3 installation challenge
+        env:
+          CHALLENGE_JSON: ${{ inputs.challenge_json }}
+          AUTH_SIGNING_SEED: ${{ secrets.AUTH_SIGNING_SEED }}
+        run: go run ./cmd/permit-signer permit.json
+      - name: Verify with the installer public key
+        env:
+          CHALLENGE_JSON: ${{ inputs.challenge_json }}
+        run: go run ./cmd/permit-verifier permit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: permit-${{ github.run_id }}
+          path: permit.json
+          if-no-files-found: error
+          retention-days: 1
