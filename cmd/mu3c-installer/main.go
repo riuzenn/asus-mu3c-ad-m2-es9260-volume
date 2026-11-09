@@ -196,8 +196,8 @@ func prepare(arguments []string) error {
 	}
 	fmt.Println("Backups saved and verified:", filepath.Join(*outDir, "backup-1.bin"), "and", filepath.Join(*outDir, "backup-2.bin"))
 	fmt.Println("Backup SHA-256:", challenge.BackupSHA256)
-	fmt.Println("Submit challenge.json to the repository owner for a signed permit.")
-	fmt.Println("Then run: mu3c-installer.exe install -base", *basePath, "-session", *outDir, "-permit permit.json")
+	fmt.Println("Installation session prepared successfully.")
+	fmt.Println("Run: mu3c-installer.exe install -base", *basePath, "-session", *outDir)
 	return nil
 }
 
@@ -256,14 +256,14 @@ func install(arguments []string) error {
 	}
 	defer deviceHandle.Close()
 	if firmware.Hash([]byte(strings.ToLower(deviceHandle.Path))) != challenge.DeviceID {
-		return errors.New("HID identity differs from signed challenge")
+		return errors.New("HID identity differs from installation session")
 	}
 	fresh, err := flash.ReadEEPROM(deviceHandle)
 	if err != nil {
 		return err
 	}
 	if !bytes.Equal(fresh, first) {
-		return errors.New("current EEPROM differs from backed-up session; prepare and authorize again")
+		return errors.New("current EEPROM differs from backed-up session; run prepare again")
 	}
 	if err := writeNewSync(filepath.Join(*sessionDir, "pre-install.bin"), fresh); err != nil {
 		return fmt.Errorf("persist fresh pre-install backup: %w", err)
