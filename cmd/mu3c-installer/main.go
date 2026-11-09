@@ -53,7 +53,7 @@ func main() {
 func usage() {
 	fmt.Fprintln(os.Stderr, "MU3C-AD(M2) v3 Windows firmware installer")
 	fmt.Fprintln(os.Stderr, "  mu3c-installer.exe prepare -base ES9260_3.6.14_EXT.rom -out SESSION_DIR [-device HID_PATH]")
-	fmt.Fprintln(os.Stderr, "  mu3c-installer.exe install -base ES9260_3.6.14_EXT.rom -session SESSION_DIR -permit permit.json")
+	fmt.Fprintln(os.Stderr, "  mu3c-installer.exe install -base ES9260_3.6.14_EXT.rom -session SESSION_DIR")
 	fmt.Fprintln(os.Stderr, "  mu3c-installer.exe verify -session SESSION_DIR")
 }
 
@@ -205,12 +205,11 @@ func install(arguments []string) error {
 	options := flag.NewFlagSet("install", flag.ContinueOnError)
 	basePath := options.String("base", "", "official ASUS ES9260 3.6.14 ROM")
 	sessionDir := options.String("session", "", "directory created by prepare")
-	permitPath := options.String("permit", "", "upstream signed permit")
 	if err := options.Parse(arguments); err != nil {
 		return err
 	}
-	if *basePath == "" || *sessionDir == "" || *permitPath == "" || options.NArg() != 0 {
-		return errors.New("install requires -base, -session and -permit")
+	if *basePath == "" || *sessionDir == "" || options.NArg() != 0 {
+	    return errors.New("install requires -base and -session")
 	}
 	if _, err := os.Stat(filepath.Join(*sessionDir, "install-started.json")); err == nil {
 		return errors.New("this installation session was already used; prepare and back up again")
@@ -251,21 +250,6 @@ func install(arguments []string) error {
 	if len(first) != flash.EEPROMSize || !bytes.Equal(first, second) || firmware.Hash(first) != challenge.BackupSHA256 {
 		return errors.New("two persisted EEPROM backups differ, are incomplete or fail the challenge hash")
 	}
-	permitBytes, err := os.ReadFile(*permitPath)
-	if err != nil {
-		return err
-	}
-	permit, err := authorization.DecodePermit(permitBytes)
-	if err != nil {
-		return err
-	}
-	publicKey, err := authorization.ProductionPublicKey()
-	if err != nil {
-		return err
-	}
-	if err := authorization.Verify(permit, challenge, publicKey, time.Now()); err != nil {
-		return err
-	}
 	deviceHandle, err := device.Open(state.DevicePath)
 	if err != nil {
 		return err
@@ -299,7 +283,7 @@ func install(arguments []string) error {
 	if err := writeNewSync(filepath.Join(*sessionDir, "install-started.json"), startReceipt); err != nil {
 		return fmt.Errorf("persist install attempt marker: %w", err)
 	}
-	fmt.Println("Signed upstream authorization accepted for attempt", challenge.AttemptID)
+	fmt.Println("Local installation session accepted for attempt", challenge.AttemptID)
 	fmt.Println("Fresh pre-install EEPROM backup persisted; checking live EEPROM again before erase")
 	readback, err := flash.Install(deviceHandle, target, first, func(message string) { fmt.Println(message) })
 	if err != nil {
